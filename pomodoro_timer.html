@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pomodoro Timer</title>
+    <style>
+        .timer {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f5f5dc;
+            border: 2px solid #a0522d;
+            border-radius: 10px;
+            padding: 20px;
+            color: #6b4226;
+            max-width: 300px;
+            margin: 50px auto;
+        }
+        .time {
+            font-size: 2em;
+            margin: 20px 0;
+        }
+        .controls {
+            display: flex;
+            gap: 10px;
+        }
+        .controls button {
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            background-color: #a0522d;
+            color: #fff;
+            cursor: pointer;
+        }
+        .controls button:hover {
+            background-color: #8b4513;
+        }
+        .settings {
+            margin-top: 20px;
+        }
+        .settings label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .settings input {
+            width: 50px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+<pomo-timer-waters></pomo-timer-waters>
+
+<script>
+    class PomoTimerWaters extends HTMLElement {
+        constructor() {
+            super();
+            this.attachShadow({ mode: 'open' });
+            this.shadowRoot.innerHTML = `
+                <div class="timer">
+                    <div class="time">25:00</div>
+                    <div class="controls">
+                        <button id="start">Start</button>
+                        <button id="pause">Pause</button>
+                        <button id="reset">Reset</button>
+                    </div>
+                    <div class="settings">
+                        <label>
+                            Work: <input type="number" id="work-duration" value="25"> min
+                        </label>
+                        <label>
+                            Break: <input type="number" id="break-duration" value="5"> min
+                        </label>
+                    </div>
+                </div>
+            `;
+
+            this.timeDisplay = this.shadowRoot.querySelector('.time');
+            this.startButton = this.shadowRoot.querySelector('#start');
+            this.pauseButton = this.shadowRoot.querySelector('#pause');
+            this.resetButton = this.shadowRoot.querySelector('#reset');
+            this.workInput = this.shadowRoot.querySelector('#work-duration');
+            this.breakInput = this.shadowRoot.querySelector('#break-duration');
+
+            this.timerInterval = null;
+            this.isPaused = true;
+            this.isBreak = false;
+            this.remainingTime = 25 * 60;
+
+            this.startButton.addEventListener('click', () => this.startTimer());
+            this.pauseButton.addEventListener('click', () => this.pauseTimer());
+            this.resetButton.addEventListener('click', () => this.resetTimer());
+            this.workInput.addEventListener('change', () => this.updateDurations());
+            this.breakInput.addEventListener('change', () => this.updateDurations());
+
+            this.updateTimeDisplay();
+        }
+
+        startTimer() {
+            if (this.isPaused) {
+                this.isPaused = false;
+                this.timerInterval = setInterval(() => this.countdown(), 1000);
+            }
+        }
+
+        pauseTimer() {
+            if (!this.isPaused) {
+                this.isPaused = true;
+                clearInterval(this.timerInterval);
+            }
+        }
+
+        resetTimer() {
+            this.isPaused = true;
+            clearInterval(this.timerInterval);
+            this.remainingTime = this.isBreak ? this.breakDuration * 60 : this.workDuration * 60;
+            this.updateTimeDisplay();
+        }
+
+        updateDurations() {
+            this.workDuration = parseInt(this.workInput.value) || 25;
+            this.breakDuration = parseInt(this.breakInput.value) || 5;
+            this.resetTimer();
+        }
+
+        countdown() {
+            if (this.remainingTime > 0) {
+                this.remainingTime--;
+                this.updateTimeDisplay();
+            } else {
+                this.isBreak = !this.isBreak;
+                this.remainingTime = this.isBreak ? this.breakDuration * 60 : this.workDuration * 60;
+                this.playSound();
+                this.updateTimeDisplay();
+            }
+        }
+
+        updateTimeDisplay() {
+            const minutes = Math.floor(this.remainingTime / 60);
+            const seconds = this.remainingTime % 60;
+            this.timeDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        playSound() {
+            const audio = new Audio('https://www.soundjay.com/button/sounds/beep-07.mp3');
+            audio.play();
+        }
+    }
+
+    customElements.define('pomo-timer-waters', PomoTimerWaters);
+</script>
+
+</body>
+</html>
